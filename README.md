@@ -101,6 +101,63 @@ Sitzungs-Cookie `Secure` traegt.
 
 ---
 
+## Web-Push-Schlüssel erzeugen
+
+Web-Push braucht ein VAPID-Schlüsselpaar. Es wird **einmal** erzeugt und bleibt
+dann bestehen: Wird es später ausgetauscht, verlieren alle Handys ihr Abo und
+müssen die Benachrichtigungen neu einschalten.
+
+Der schnellste Weg, ohne das Projekt auszuchecken – läuft auf jedem Rechner
+mit Docker und gibt direkt einfügefertige Zeilen aus:
+
+```bash
+docker run --rm -w /tmp node:22-alpine sh -c   "npm install web-push --silent >/dev/null 2>&1;    node -e \"const k=require('web-push').generateVAPIDKeys();    console.log('VAPID_PUBLIC_KEY='+k.publicKey);    console.log('VAPID_PRIVATE_KEY='+k.privateKey)\""
+```
+
+Alternativ aus dem Projekt heraus:
+
+```bash
+cd server && npm run genkeys              # lokal
+docker compose run --rm --no-deps app npm run genkeys   # im Container
+```
+
+Beide Werte als Umgebungsvariablen hinterlegen. Der **private** Schlüssel ist
+ein Geheimnis und gehört nicht ins Git. Fehlen die Schlüssel, startet die
+Anwendung trotzdem – dann sind lediglich die Benachrichtigungen aus, und das
+Log sagt es.
+
+---
+
+## Die erste Anmeldung
+
+Beim allerersten Start – wenn die Mitarbeitertabelle noch leer ist – legt der
+Server einen Chef-Zugang an. Zwei Wege:
+
+**Empfohlen: PIN vorher festlegen.** `SEED_CHEF_PIN` auf eine fünfstellige
+Zahl setzen, bevor zum ersten Mal deployt wird. Dann ist die PIN bekannt und
+niemand muss im Log suchen. Nach der ersten Anmeldung unter *Mehr → PIN
+ändern* eine eigene vergeben und die Variable wieder entfernen.
+
+**Oder: PIN aus dem Log holen.** Bleibt `SEED_CHEF_PIN` leer, erzeugt der
+Server eine zufällige PIN und schreibt sie beim Start in die Logausgabe:
+
+```
+================================================================
+  ERSTE INBETRIEBNAHME – Chef-Zugang wurde angelegt
+  Name: Chef
+  PIN:  64178
+================================================================
+```
+
+In Coolify steht das unter *Logs* der Anwendung, bei Docker unter
+`docker compose logs app`.
+
+> Diese Zeile erscheint **nur ein einziges Mal**. Bei jedem weiteren Start
+> passiert nichts mehr, weil der Zugang bereits existiert. Wer sie verpasst,
+> setzt die PIN mit `npm run reset-pin` neu (siehe *Wartung*).
+
+---
+
 ## Deployment mit Coolify
 
 Coolify uebernimmt Reverse Proxy, Zertifikat und Neustarts. Zwei Wege, der
@@ -452,6 +509,7 @@ server/
       migrate.js          Schema anlegen
       bootstrap.js        Ersten Chef-Zugang anlegen (Zufalls-PIN)
       seed.js             Dasselbe von Hand, für lokale Installationen
+      reset-pin.js        PIN eines Zugangs zurücksetzen und entsperren
       genkeys.js          VAPID-Schlüssel erzeugen
     routes/
       auth.js             Anmelden, Abmelden, PIN ändern
@@ -547,15 +605,17 @@ Abgelaufene Sitzungen räumt die App stündlich selbst auf.
 Chef → *Mehr* → *Mitarbeiter* → Stift-Symbol → neue PIN eintragen. Das hebt eine
 bestehende Sperre gleich mit auf.
 
-Ist die PIN **des Chefs** verloren, hilft nur die Kommandozeile:
+Ist die PIN **des Chefs** verloren, gibt es dafür ein Wartungsskript:
 
 ```bash
-cd /opt/hd-dispo/server
-node -e "
-import('bcryptjs').then(async b => {
-  console.log(await b.default.hash('NEUEPIN', 12));
-});"
-# Ausgabe einsetzen:
-psql -U hd_user -d hd_dispo -c \
-  "UPDATE employees SET pin_hash='HASH', failed_logins=0, locked_until=NULL WHERE name='Chef';"
+# Mit Docker / Coolify
+docker compose exec app npm run reset-pin -- "Chef" 40721
+
+# Ohne Docker
+cd /opt/hd-dispo/server && npm run reset-pin -- "Chef" 40721
 ```
+
+Ohne PIN als zweites Argument wird eine zufällige erzeugt und ausgegeben, ohne
+jedes Argument listet das Skript die vorhandenen Zugänge auf. Es hebt eine
+bestehende Kontosperre auf und beendet alle offenen Sitzungen dieses Zugangs –
+wer die alte PIN kannte, bleibt also nicht angemeldet.

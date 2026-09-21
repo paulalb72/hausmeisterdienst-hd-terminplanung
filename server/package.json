@@ -10,9 +10,12 @@
     "dev": "node --watch src/index.js",
     "migrate": "node src/lib/migrate.js",
     "seed": "node src/lib/seed.js",
-    "genkeys": "node src/lib/genkeys.js"
+    "genkeys": "node src/lib/genkeys.js",
+    "reset-pin": "node src/lib/reset-pin.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
