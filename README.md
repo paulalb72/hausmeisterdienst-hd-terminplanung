@@ -107,18 +107,28 @@ Web-Push braucht ein VAPID-Schlüsselpaar. Es wird **einmal** erzeugt und bleibt
 dann bestehen: Wird es später ausgetauscht, verlieren alle Handys ihr Abo und
 müssen die Benachrichtigungen neu einschalten.
 
-Der schnellste Weg, ohne das Projekt auszuchecken – läuft auf jedem Rechner
-mit Docker und gibt direkt einfügefertige Zeilen aus:
+Aus dem Projekt heraus – der kürzeste Weg, wenn das Repository schon da ist:
 
-```bash
-docker run --rm -w /tmp node:22-alpine sh -c   "npm install web-push --silent >/dev/null 2>&1;    node -e \"const k=require('web-push').generateVAPIDKeys();    console.log('VAPID_PUBLIC_KEY='+k.publicKey);    console.log('VAPID_PRIVATE_KEY='+k.privateKey)\""
+```
+cd server
+npm run genkeys
 ```
 
-Alternativ aus dem Projekt heraus:
+Ohne Projekt, nur mit Docker. Der Befehl enthält bewusst keine
+Anführungszeichen und keine Zeilenumbrüche und läuft dadurch unverändert in
+der Windows-Eingabeaufforderung, in PowerShell und in jeder Linux-Shell:
 
-```bash
-cd server && npm run genkeys              # lokal
-docker compose run --rm --no-deps app npm run genkeys   # im Container
+```
+docker run --rm node:22-alpine npx -y web-push generate-vapid-keys
+```
+
+Die Ausgabe nennt `Public Key` und `Private Key` untereinander. Wer beides
+lieber maschinenlesbar hat, hängt `--json` an.
+
+Im Container einer laufenden Installation:
+
+```
+docker compose run --rm --no-deps app npm run genkeys
 ```
 
 Beide Werte als Umgebungsvariablen hinterlegen. Der **private** Schlüssel ist
