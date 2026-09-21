@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 347.57 206.95">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#Unbenannter_Verlauf_3-2);
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke-width: 0px;
+      }
+
+      .cls-1, .cls-3 {
+        fill-rule: evenodd;
+      }
+
+      .cls-2 {
+        fill: url(#Unbenannter_Verlauf_3);
+      }
+
+      .cls-3 {
+        fill: url(#Unbenannter_Verlauf_3-3);
+      }
+    </style>
+    <linearGradient id="Unbenannter_Verlauf_3" data-name="Unbenannter Verlauf 3" x1="114.47" y1="514.87" x2="168.02" y2="514.87" gradientTransform="translate(0 617.83) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2d9537"/>
+      <stop offset="1" stop-color="#1b6c30"/>
+    </linearGradient>
+    <linearGradient id="Unbenannter_Verlauf_3-2" data-name="Unbenannter Verlauf 3" x1="166.19" y1="514.84" x2="330.52" y2="514.84" xlink:href="#Unbenannter_Verlauf_3"/>
+    <linearGradient id="Unbenannter_Verlauf_3-3" data-name="Unbenannter Verlauf 3" x1="82.11" y1="579.22" x2="266.36" y2="579.22" xlink:href="#Unbenannter_Verlauf_3"/>
+  </defs>
+  <path class="cls-2" d="M147.7,156.52v-45.27h-14.88v34.8c-23.79-22.87-24.55-60.69-1.68-84.48.55-.57,1.11-1.13,1.68-1.68v32.32h14.88v-42.79c6.37-3.17,13.25-5.16,20.32-5.9v118.88c-7.07-.73-13.96-2.72-20.32-5.88Z"/>
+  <path class="cls-1" d="M207.47,53.31c-7.96-5.33-17.1-8.65-26.63-9.68v118.75c32.8-3.65,56.44-33.2,52.79-66-1.95-17.51-11.52-33.27-26.16-43.07ZM207.47,127.86c-2.71,3.05-5.9,5.64-9.45,7.66v-65.1c17.99,10.3,24.22,33.22,13.92,51.21-1.27,2.22-2.77,4.31-4.47,6.23Z"/>
+  <path class="cls-3" d="M121.77,8.82h6.74c4.34.01,7.85,3.53,7.87,7.87v8.47L170.58,1.17c2.21-1.42,5.05-1.42,7.26,0l86.72,60.72c2.71,1.9,3.39,5.63,1.53,8.36l-2.97,4.22c-1.9,2.7-5.62,3.38-8.35,1.53l-80.53-56.36-80.46,56.36c-2.73,1.93-6.5,1.29-8.44-1.44-.01-.02-.02-.03-.04-.05l-2.92-4.26c-1.9-2.73-1.24-6.48,1.48-8.4l30.04-20.99v-24.21c.03-4.33,3.54-7.83,7.87-7.83Z"/>
+</svg>

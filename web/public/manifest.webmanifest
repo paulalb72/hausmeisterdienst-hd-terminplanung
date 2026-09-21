@@ -1,0 +1,34 @@
+{
+  "name": "Hausmeisterdienst HD – Termine",
+  "short_name": "HD Termine",
+  "description": "Terminplanung für Hausmeisterdienst HD, Frankfurt am Main",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F5F4F3",
+  "theme_color": "#10712A",
+  "lang": "de-DE",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Neuer Termin",
+      "short_name": "Neu",
+      "url": "/termin/neu",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Disposition",
+      "short_name": "Dispo",
+      "url": "/dispo",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

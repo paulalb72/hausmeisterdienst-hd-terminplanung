@@ -1,0 +1,27 @@
+# Nur fuer die lokale Entwicklung: startet eine Postgres-Instanz.
+# Der Server laeuft dabei direkt mit "npm start" daneben.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# Fuer den Produktivbetrieb ist docker-compose.yml zustaendig.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: hd_dispo_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hd_user
+      POSTGRES_PASSWORD: devpw
+      POSTGRES_DB: hd_dispo
+    ports:
+      - "55432:5432"
+    volumes:
+      - hd_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hd_user -d hd_dispo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  hd_pgdata:

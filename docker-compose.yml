@@ -1,0 +1,55 @@
+# Produktivbetrieb: Anwendung und Datenbank zusammen.
+#
+#   cp .env.example .env     # Werte eintragen
+#   docker compose up -d --build
+#
+# Fuer Coolify siehe README ("Deployment mit Coolify"). Die lokale
+# Entwicklungsdatenbank steht in docker-compose.dev.yml.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://hd_user:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt}@db:5432/hd_dispo
+      PORT: "4000"
+      NODE_ENV: production
+      # Hinter dem Reverse Proxy Pflicht, sonst zaehlen die Rate-Limits
+      # alle Nutzer als einen einzigen Absender.
+      TRUST_PROXY: "true"
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:info@hausmeister-service-frankfurt.de}
+      # Leer lassen: Der Server erzeugt beim allerersten Start eine
+      # Zufalls-PIN und schreibt sie ins Log.
+      SEED_CHEF_NAME: ${SEED_CHEF_NAME:-Chef}
+      SEED_CHEF_PIN: ${SEED_CHEF_PIN:-}
+    ports:
+      # Nur auf localhost binden – nach aussen geht es ueber den Reverse
+      # Proxy mit TLS. Ohne HTTPS gibt es keinen Service Worker und keine
+      # Anmeldung, weil das Sitzungs-Cookie "Secure" traegt.
+      - "127.0.0.1:${APP_PORT:-4000}:4000"
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hd_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt}
+      POSTGRES_DB: hd_dispo
+    volumes:
+      - hd_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hd_user -d hd_dispo"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  hd_pgdata:

@@ -1,0 +1,8 @@
+# Im Repository immer LF speichern. Ohne das landen unter Windows CRLF im
+# Index, was im Linux-Container und in Docker-Builds Probleme macht.
+* text=auto eol=lf
+
+# Binaerdateien unangetastet lassen.
+*.png  binary
+*.woff2 binary
+*.ico  binary

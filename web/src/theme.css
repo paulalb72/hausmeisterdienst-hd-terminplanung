@@ -1,0 +1,299 @@
+/* ===========================================================================
+   Corporate Design Hausmeisterdienst HD
+   Werte direkt aus dem Stylesheet von hausmeister-service-frankfurt.de
+   uebernommen. Schriften sind selbst gehostet, damit die PWA offline und
+   ohne Google-CDN funktioniert.
+   ======================================================================== */
+
+@font-face {
+  font-family: 'Anton';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/anton.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/lato-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./assets/fonts/lato-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./assets/fonts/caveat.woff2') format('woff2');
+}
+
+:root {
+  /* Markenfarben */
+  --hd-green:        #10712A;  /* Buttons, Rahmen, Primaerfarbe */
+  --hd-green-head:   #11772B;  /* Ueberschriften */
+  --hd-green-dark:   #07692A;  /* Hover / gedrueckt */
+  --hd-green-bright: #2D9537;  /* heller Pol des Logo-Verlaufs */
+  --hd-tint:         #E7F1EA;  /* flaechiger Gruenschleier */
+  --hd-tint-strong:  #D3E6D9;
+
+  --hd-ink:          #2D2D2D;  /* Fliesstext, Anthrazit aus der Wortmarke */
+  --hd-ink-soft:     #6B6B6B;
+  --hd-ink-faint:    #9A9A9A;
+
+  --hd-accent:       #EABD00;  /* Warnung / Hinweis */
+  /* Abstufungen des Akzents fuer Termine ohne feste Uhrzeit ("ruft an").
+     accent-ink ist dunkel genug, um auf accent-soft lesbar zu bleiben. */
+  --hd-accent-soft:  #FDF3D3;
+  --hd-accent-line:  #EBDCA6;
+  --hd-accent-ink:   #8A6A00;
+  --hd-danger:       #C81410;  /* Stornieren, Fehler */
+  --hd-danger-soft:  #FDECEC;
+
+  --hd-bg:           #F5F4F3;
+  --hd-surface:      #FFFFFF;
+  --hd-line:         #E0E0E0;
+  --hd-line-soft:    #EDEDED;
+
+  --font-head: 'Anton', 'Arial Narrow', sans-serif;
+  --font-body: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-script: 'Caveat', cursive;
+
+  /* Die Marke verwendet durchgehend eckige Kanten (border-radius: 0).
+     Nur Chips und Avatare weichen bewusst davon ab. */
+  --radius: 0px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .08);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, .10);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, .18);
+
+  /* Sichere Flaechen auf iPhones mit Notch / Home-Indicator */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  --header-h: 56px;
+  --tabbar-h: 60px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--hd-ink);
+  background: var(--hd-bg);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  /* Verhindert das Gummiband-Scrollen der ganzen Seite auf iOS. */
+  overscroll-behavior-y: none;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-head);
+  font-weight: 400;
+  color: var(--hd-green-head);
+  letter-spacing: .01em;
+  margin: 0 0 .5em;
+  line-height: 1.15;
+}
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.1rem; }
+
+a { color: var(--hd-green); }
+
+/* --- Buttons: eckig, das ist das praegende Markenmerkmal ----------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  min-height: 44px;              /* Fingerfreundlich auf der Baustelle */
+  border: 1px solid var(--hd-green);
+  border-radius: var(--radius);
+  background: var(--hd-green);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.btn:hover:not(:disabled) { background: var(--hd-green-dark); border-color: var(--hd-green-dark); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn--ghost {
+  background: transparent;
+  color: var(--hd-green);
+}
+.btn--ghost:hover:not(:disabled) { background: var(--hd-tint); border-color: var(--hd-green-dark); color: var(--hd-green-dark); }
+
+.btn--muted {
+  background: transparent;
+  border-color: var(--hd-line);
+  color: var(--hd-ink-soft);
+}
+.btn--muted:hover:not(:disabled) { background: #fff; border-color: var(--hd-ink-faint); color: var(--hd-ink); }
+
+.btn--danger { background: var(--hd-danger); border-color: var(--hd-danger); }
+.btn--danger:hover:not(:disabled) { background: #A81010; border-color: #A81010; }
+
+.btn--block { width: 100%; }
+.btn--sm { min-height: 36px; padding: 7px 12px; font-size: 14px; }
+
+/* --- Formularfelder ------------------------------------------------------ */
+
+.field { margin-bottom: 16px; }
+
+.label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--hd-ink-soft);
+}
+
+.input, .select, .textarea {
+  width: 100%;
+  padding: 11px 12px;
+  min-height: 44px;
+  border: 1px solid var(--hd-line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--hd-ink);
+  font-family: var(--font-body);
+  font-size: 16px;   /* Unter 16px zoomt iOS beim Fokussieren hinein. */
+  line-height: 1.4;
+}
+.input:focus, .select:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--hd-green);
+  box-shadow: 0 0 0 3px rgba(16, 113, 42, .15);
+}
+.textarea { min-height: 96px; resize: vertical; }
+
+.select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%232D2D2D' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  padding-right: 34px;
+}
+
+.hint { margin-top: 5px; font-size: 13px; color: var(--hd-ink-soft); }
+
+.error-box {
+  padding: 11px 13px;
+  margin-bottom: 14px;
+  border-left: 4px solid var(--hd-danger);
+  background: var(--hd-danger-soft);
+  color: #8C1310;
+  font-size: 14px;
+}
+
+.info-box {
+  padding: 11px 13px;
+  margin-bottom: 14px;
+  border-left: 4px solid var(--hd-green);
+  background: var(--hd-tint);
+  font-size: 14px;
+}
+
+/* --- Flaechen ------------------------------------------------------------ */
+
+.card {
+  background: var(--hd-surface);
+  border: 1px solid var(--hd-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--hd-tint);
+  color: var(--hd-green-head);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.chip--grey { background: #ECECEC; color: var(--hd-ink-soft); }
+.chip--danger { background: var(--hd-danger-soft); color: var(--hd-danger); }
+
+/* Initialen-Kreis in Mitarbeiterfarbe */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--hd-green);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--hd-ink-soft);
+}
+.empty__script {
+  font-family: var(--font-script);
+  font-size: 1.6rem;
+  color: var(--hd-green-head);
+  margin-bottom: 4px;
+}
+
+.spinner {
+  width: 26px;
+  height: 26px;
+  margin: 32px auto;
+  border: 3px solid var(--hd-tint-strong);
+  border-top-color: var(--hd-green);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Wer die Bewegungsreduzierung im System aktiviert hat, bekommt keine. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
