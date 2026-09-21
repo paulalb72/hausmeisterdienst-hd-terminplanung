@@ -9,18 +9,29 @@ import { IconClose } from './Icons.jsx';
 export function Modal({ title, onClose, children, footer, wide = false }) {
   const boxRef = useRef(null);
 
+  // Die Aufrufer geben onClose meist als Inline-Funktion mit, die bei jedem
+  // Rendern neu entsteht. Sie darf deshalb nicht in den Dependencies stehen:
+  // sonst laeuft der Effekt bei jedem Tastendruck erneut und zieht den Fokus
+  // aus dem Eingabefeld. Stattdessen immer die aktuelle Fassung per Ref.
+  const closeRef = useRef(onClose);
+  useEffect(() => { closeRef.current = onClose; });
+
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape') closeRef.current(); };
     document.addEventListener('keydown', onKey);
     // Hintergrund nicht mitscrollen lassen, solange der Dialog offen ist.
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    boxRef.current?.querySelector('input, select, textarea, button')?.focus();
+    // Nur Felder aus dem Inhalt anspringen – nicht das Schliessen-Kreuz,
+    // das in der Kopfzeile vor ihnen steht.
+    boxRef.current
+      ?.querySelector('.modal__body input, .modal__body select, .modal__body textarea')
+      ?.focus();
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previous;
     };
-  }, [onClose]);
+  }, []);
 
   return createPortal(
     <div

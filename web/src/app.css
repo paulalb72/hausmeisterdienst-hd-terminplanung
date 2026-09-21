@@ -211,7 +211,8 @@
 /* Namensliste als grosse Kacheln – schnell mit dem Daumen zu treffen. */
 .login__people {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  /* Eine Spalte: lange Namen brauchen die volle Breite der Karte. */
+  grid-template-columns: 1fr;
   gap: 8px;
   max-height: 46dvh;
   overflow-y: auto;
@@ -233,7 +234,7 @@
   cursor: pointer;
 }
 .person:hover { border-color: var(--hd-green); background: var(--hd-tint); }
-.person__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.person__name { min-width: 0; overflow-wrap: anywhere; }
 
 /* PIN-Eingabe: fuenf Kaestchen, gefuettert von einem unsichtbaren Feld. */
 .pinpad { text-align: center; }
