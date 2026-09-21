@@ -9,7 +9,12 @@ WORKDIR /build/web
 # Erst die Manifeste kopieren: solange sie sich nicht aendern, bleibt die
 # Installationsschicht im Cache und der Neubau dauert Sekunden.
 COPY web/package.json web/package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# --include=dev ist Pflicht: Vite und das React-Plugin sind devDependencies.
+# Build-Plattformen wie Coolify reichen die Laufzeitvariablen als Build-Args
+# durch, und ein dort gesetztes NODE_ENV=production wuerde npm dazu bringen,
+# genau diese Pakete zu ueberspringen – der Build braeche mit
+# "sh: vite: not found" ab.
+RUN npm ci --include=dev --no-audit --no-fund
 
 COPY web/index.html web/vite.config.js ./
 COPY web/public ./public

@@ -189,8 +189,6 @@ Postgres nicht im Compose-Stack mitlaufen zu lassen.
    | Variable | Wert |
    |---|---|
    | `DATABASE_URL` | interne URL aus Schritt 1 |
-   | `NODE_ENV` | `production` |
-   | `PORT` | `4000` |
    | `TRUST_PROXY` | `true` |
    | `VAPID_PUBLIC_KEY` | aus `npm run genkeys` |
    | `VAPID_PRIVATE_KEY` | aus `npm run genkeys` |
@@ -198,6 +196,21 @@ Postgres nicht im Compose-Stack mitlaufen zu lassen.
    | `SEED_CHEF_NAME` | `Chef` |
 
    `SEED_CHEF_PIN` bleibt leer – dann erzeugt der Server eine Zufalls-PIN.
+
+   `NODE_ENV` und `PORT` **nicht** setzen: Das Image bringt beide mit.
+   Coolify reicht gesetzte Variablen zusätzlich als Build-Argumente in den
+   Docker-Build, und ein dort sichtbares `NODE_ENV=production` würde npm dazu
+   bringen, die devDependencies zu überspringen – der Frontend-Build bräche
+   mit `sh: vite: not found` ab. Das Dockerfile fängt das inzwischen mit
+   `npm ci --include=dev` ab, aber die Variablen werden trotzdem nicht
+   gebraucht.
+
+   Coolify hat je Variable einen Schalter dafür, ob sie auch zur Bauzeit
+   verfügbar sein soll. Für Geheimnisse wie `VAPID_PRIVATE_KEY` lohnt es,
+   ihn auszuschalten: Build-Argumente landen im Klartext in der Image-History
+   (`docker history`). Auf dem eigenen Server bleibt das Image zwar lokal,
+   aber sobald es je in eine Registry wandert, wäre der Schlüssel darin
+   lesbar.
 5. **Domain** eintragen, z. B. `termine.hausmeister-service-frankfurt.de`.
    Coolify holt das Let's-Encrypt-Zertifikat selbst. Der DNS-A-Record muss
    vorher auf den Server zeigen.
