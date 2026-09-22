@@ -10,6 +10,11 @@
   flex-direction: column;
   min-height: 100dvh;
   background: var(--hd-bg);
+  /* Sicherheitsnetz: sollte ein Inhalt doch einmal breiter werden als der
+     Bildschirm, wird er beschnitten statt die Seite waagerecht scrollbar zu
+     machen. Sonst schiebt ein Wischen zur Seite die feste Leiste unten aus
+     dem Bild. "clip" statt "hidden", damit die klebende Kopfzeile bleibt. */
+  overflow-x: clip;
 }
 
 .shell__main {
@@ -375,6 +380,12 @@
 
 .appt__body { flex: 1; min-width: 0; padding: 11px 12px; }
 .appt__title {
+  /* Der Titel steht in einem <span>. Ohne "display: block" bliebe er eine
+     Inline-Box – dort greifen weder overflow noch text-overflow, und ein
+     langer Titel wuerde die Seite breiter machen als den Bildschirm. Die
+     Folge waere ein waagerechtes Scrollen, bei dem die feste Navigations-
+     leiste unten aus dem Bild wandert. */
+  display: block;
   margin: 0 0 3px;
   font-size: 16px;
   font-weight: 700;
