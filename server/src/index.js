@@ -16,7 +16,7 @@ import { loadUser, purgeExpiredSessions } from './lib/auth.js';
 import { pool } from './lib/db.js';
 import { authRouter } from './routes/auth.js';
 import { employeesRouter } from './routes/employees.js';
-import { appointmentsRouter } from './routes/appointments.js';
+import { appointmentsRouter, sendDueReminders } from './routes/appointments.js';
 import { pushRouter } from './routes/push.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -106,6 +106,12 @@ logBootstrap(await ensureChefAccount());
 // Abgelaufene Sitzungen einmal beim Start und danach stündlich aufräumen.
 purgeExpiredSessions().catch(() => {});
 setInterval(() => { purgeExpiredSessions().catch(() => {}); }, 60 * 60 * 1000).unref();
+
+// Fällige Erinnerungen vor Terminbeginn: beim Start und dann jede Minute.
+const remind = () => sendDueReminders()
+  .catch((err) => console.error('[erinnerung]', err.message));
+remind();
+setInterval(remind, 60 * 1000).unref();
 
 const server = app.listen(PORT, () => {
   console.log(`Hausmeisterdienst HD – Terminplanung läuft auf Port ${PORT}`);

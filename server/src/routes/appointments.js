@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { many, one } from '../lib/db.js';
 import { requireAuth, requireChef } from '../lib/auth.js';
-import { notifyEmployee } from '../lib/push.js';
+import { notifyEmployee, pushEnabled } from '../lib/push.js';
 
 export const appointmentsRouter = Router();
 
@@ -237,6 +237,9 @@ appointmentsRouter.put('/:id', requireChef, async (req, res, next) => {
          span_end    = $7,
          notes       = COALESCE($8, notes),
          status      = COALESCE($9, status),
+         -- Ob die Erinnerung danach noch kommt, entscheidet sendDueReminders
+         -- anhand von updated_at.
+         reminded_at = NULL,
          updated_at  = now()
        WHERE id = $1
        RETURNING id`,
@@ -338,4 +341,40 @@ async function notifyOnChange(before, after) {
       url: `/termin/${after.id}`,
     });
   }
+}
+
+const REMINDER_LEAD_MIN = 60;
+
+/**
+ * Erinnerung eine Stunde vor Beginn – nur bei fester Uhrzeit oder
+ * Zeitspanne. "Vormittags" & Co. haben keinen echten Beginn, ihre
+ * Ankerzeit dient nur der Sortierung.
+ *
+ * Läuft jede Minute (siehe index.js). Das UPDATE beansprucht die Termine
+ * vor dem Versand, damit zwei Durchläufe nie doppelt erinnern. Wurde der
+ * Termin erst innerhalb der Vorlaufzeit angelegt oder geändert, hat der
+ * Mitarbeiter gerade eine Push dazu bekommen und braucht keine zweite –
+ * daher der Vergleich mit updated_at.
+ */
+export async function sendDueReminders() {
+  if (!pushEnabled) return;
+  const due = await many(
+    `UPDATE appointments SET reminded_at = now()
+      WHERE status = 'geplant'
+        AND time_mode IN ('exakt', 'spanne')
+        AND reminded_at IS NULL
+        AND starts_at >  now()
+        AND starts_at <= now() + make_interval(mins => $1)
+        AND updated_at <= starts_at - make_interval(mins => $1)
+      RETURNING id, employee_id, title, starts_at, time_mode, span_end, object`,
+    [REMINDER_LEAD_MIN],
+  );
+  await Promise.all(due.map((row) => notifyEmployee(row.employee_id, {
+    title: 'Termin in Kürze',
+    body: `${row.title}\n${humanWhen(row)}${row.object ? `\n${row.object}` : ''}`,
+    url: `/termin/${row.id}`,
+    // Eigenes Tag je Termin: zwei Termine zur selben Zeit sollen sich auf
+    // dem Sperrbildschirm nicht gegenseitig verdrängen.
+    tag: `hd-erinnerung-${row.id}`,
+  })));
 }

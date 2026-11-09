@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS appointments (
   notes         TEXT        NOT NULL DEFAULT '',
   status        TEXT        NOT NULL DEFAULT 'geplant'
                             CHECK (status IN ('geplant', 'storniert')),
+  -- Wann die Erinnerung vor Beginn rausging. Jede Änderung leert das Feld,
+  -- damit ein verschobener Termin zur neuen Zeit erneut erinnert.
+  reminded_at   TIMESTAMPTZ,
   created_by    INTEGER              REFERENCES employees (id) ON DELETE SET NULL,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -132,6 +135,9 @@ BEGIN
   END IF;
 END
 $migration$;
+
+-- 4. Erinnerung vor Terminbeginn.
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS reminded_at TIMESTAMPTZ;
 
 
 -- Indizes zuletzt: sie beziehen sich auf die migrierten Spalten.

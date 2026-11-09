@@ -502,6 +502,12 @@ Bezeichnung/Auftrag/Objekt, Stornierung und Löschung. Wechselt ein Termin den
 Mitarbeiter, werden beide informiert – der eine, dass er ihn los ist, der andere,
 dass er ihn hat.
 
+Eine Stunde vor Beginn kommt zusätzlich eine Erinnerung – aber nur bei fester
+Uhrzeit oder Zeitspanne, nicht bei „Vormittags/Mittags/Nachmittags“. Wird ein
+Termin erst innerhalb dieser Stunde angelegt oder geändert, entfällt die
+Erinnerung, weil gerade eine Push dazu kam. Ein verschobener Termin erinnert
+zur neuen Zeit erneut.
+
 Ein fehlgeschlagener Push lässt das Speichern nie scheitern. Geräte, die ihr Abo
 verworfen haben (HTTP 404/410), werden automatisch aus der Datenbank entfernt.
 
