@@ -503,7 +503,7 @@ Mitarbeiter, werden beide informiert – der eine, dass er ihn los ist, der ande
 dass er ihn hat.
 
 Eine Stunde vor Beginn kommt zusätzlich eine Erinnerung – aber nur bei fester
-Uhrzeit oder Zeitspanne, nicht bei „Vormittags/Mittags/Nachmittags“. Wird ein
+Uhrzeit, nie bei „ruft an“ (Vormittags, Mittags, Nachmittags, Zeitspanne). Wird ein
 Termin erst innerhalb dieser Stunde angelegt oder geändert, entfällt die
 Erinnerung, weil gerade eine Push dazu kam. Ein verschobener Termin erinnert
 zur neuen Zeit erneut.

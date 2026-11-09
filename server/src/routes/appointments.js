@@ -346,9 +346,9 @@ async function notifyOnChange(before, after) {
 const REMINDER_LEAD_MIN = 60;
 
 /**
- * Erinnerung eine Stunde vor Beginn – nur bei fester Uhrzeit oder
- * Zeitspanne. "Vormittags" & Co. haben keinen echten Beginn, ihre
- * Ankerzeit dient nur der Sortierung.
+ * Erinnerung eine Stunde vor Beginn – nur bei fester Uhrzeit. Bei
+ * "ruft an" (Vormittags, Mittags, Nachmittags, Zeitspanne) meldet sich
+ * der Kunde selbst, eine Erinnerung hätte keinen Zeitpunkt.
  *
  * Läuft jede Minute (siehe index.js). Das UPDATE beansprucht die Termine
  * vor dem Versand, damit zwei Durchläufe nie doppelt erinnern. Wurde der
@@ -361,7 +361,7 @@ export async function sendDueReminders() {
   const due = await many(
     `UPDATE appointments SET reminded_at = now()
       WHERE status = 'geplant'
-        AND time_mode IN ('exakt', 'spanne')
+        AND time_mode = 'exakt'
         AND reminded_at IS NULL
         AND starts_at >  now()
         AND starts_at <= now() + make_interval(mins => $1)
