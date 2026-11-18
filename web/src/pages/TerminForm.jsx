@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import {
-  addDays, formatDateShort, fromDateTimeInput, nextQuarterHour, toDateInput,
+  addDays, formatDateShort, formatTime, fromDateTimeInput, nextQuarterHour, toDateInput,
 } from '../lib/dates.js';
+import { ladeEntwurf, speichereEntwurf, verwirfEntwurf } from '../lib/entwurf.js';
 import { ZEITRAEUME, zeitAusTermin, zeitFuerServer } from '../lib/termin.js';
 import { ErrorBox, Shell, Spinner } from '../components/Shell.jsx';
 import { useToast } from '../components/Toast.jsx';
@@ -26,26 +27,22 @@ export default function TerminForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const [form, setForm] = useState(() => {
-    // Vorbelegung aus der Disposition: ein Klick auf ein freies Tagesfeld
-    // uebergibt Mitarbeiter und Datum per Query-Parameter.
-    const start = params.get('start') ? new Date(params.get('start')) : nextQuarterHour();
-    return {
-      title: '',
-      employeeId: params.get('employee') || '',
-      object: '',
-      date: toDateInput(start),
-      // Zeitangabe
-      ruftAn: false,
-      uhrzeit: `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`,
-      zeitraum: 'vormittags',
-      von: '08:00',
-      bis: '12:00',
-      notes: '',
-    };
-  });
+  // Ein nicht gespeicherter Entwurf geht der Vorbelegung vor – der Hinweis
+  // oben im Formular macht das sichtbar und bietet das Verwerfen an.
+  const [entwurf, setEntwurf] = useState(() => (isEdit ? null : ladeEntwurf()));
+  const [form, setForm] = useState(() => ({ ...leeresFormular(params), ...entwurf?.form }));
 
-  const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+  // Erst echte Eingaben werden gesichert. Sonst hinterliesse jedes Oeffnen
+  // und Verlassen ueber den Zurueck-Pfeil einen leeren Entwurf.
+  const bearbeitet = useRef(false);
+  const set = (patch) => {
+    bearbeitet.current = true;
+    setForm((f) => ({ ...f, ...patch }));
+  };
+
+  useEffect(() => {
+    if (!isEdit && bearbeitet.current) speichereEntwurf(form);
+  }, [form, isEdit]);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,7 +68,9 @@ export default function TerminForm() {
         } else if (!params.get('employee')) {
           // Bei genau einem aktiven Mitarbeiter ist die Auswahl ueberfluessig.
           const active = emp.filter((e) => e.active !== false);
-          if (active.length === 1) setForm((f) => ({ ...f, employeeId: String(active[0].id) }));
+          if (active.length === 1) {
+            setForm((f) => (f.employeeId ? f : { ...f, employeeId: String(active[0].id) }));
+          }
         }
       })
       .catch((err) => { if (!cancelled) setError(err.message); })
@@ -97,6 +96,17 @@ export default function TerminForm() {
       };
     });
   }, []);
+
+  function entwurfVerwerfen() {
+    verwirfEntwurf();
+    bearbeitet.current = false;
+    setEntwurf(null);
+    const leer = leeresFormular(params);
+    if (!leer.employeeId && activeEmployees.length === 1) {
+      leer.employeeId = String(activeEmployees[0].id);
+    }
+    setForm(leer);
+  }
 
   async function submit(event) {
     event.preventDefault();
@@ -130,6 +140,7 @@ export default function TerminForm() {
         navigate(`/termin/${id}`, { replace: true });
       } else {
         const created = await api.createAppointment(payload);
+        verwirfEntwurf();
         toast('Termin angelegt.');
         navigate(`/termin/${created.id}`, { replace: true });
       }
@@ -145,6 +156,18 @@ export default function TerminForm() {
     <Shell title={isEdit ? 'Termin bearbeiten' : 'Neuer Termin'} back nav={false}>
       <form onSubmit={submit}>
         <ErrorBox error={error} />
+
+        {entwurf && (
+          <div className="info-box row" style={{ alignItems: 'center' }}>
+            <span className="grow">
+              Nicht gespeicherter Entwurf vom {formatDateShort(entwurf.gespeichert)},{' '}
+              {formatTime(entwurf.gespeichert)} Uhr.
+            </span>
+            <button type="button" className="btn btn--sm btn--ghost" onClick={entwurfVerwerfen}>
+              Verwerfen
+            </button>
+          </div>
+        )}
 
         <div className="field">
           <label className="label" htmlFor="t-title">Bezeichnung</label>
@@ -238,7 +261,12 @@ export default function TerminForm() {
           <button
             type="button"
             className="btn btn--muted grow"
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              // Abbrechen ist eine bewusste Entscheidung – der Zurueck-Pfeil
+              // oder das Schliessen der App behalten den Entwurf.
+              if (!isEdit) verwirfEntwurf();
+              navigate(-1);
+            }}
             disabled={saving}
           >
             Abbrechen
@@ -250,6 +278,28 @@ export default function TerminForm() {
       </form>
     </Shell>
   );
+}
+
+/**
+ * Startwerte fuer einen neuen Termin. Vorbelegung aus der Disposition: ein
+ * Klick auf ein freies Tagesfeld uebergibt Mitarbeiter und Datum per
+ * Query-Parameter.
+ */
+function leeresFormular(params) {
+  const start = params.get('start') ? new Date(params.get('start')) : nextQuarterHour();
+  return {
+    title: '',
+    employeeId: params.get('employee') || '',
+    object: '',
+    date: toDateInput(start),
+    // Zeitangabe
+    ruftAn: false,
+    uhrzeit: `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`,
+    zeitraum: 'vormittags',
+    von: '08:00',
+    bis: '12:00',
+    notes: '',
+  };
 }
 
 /**

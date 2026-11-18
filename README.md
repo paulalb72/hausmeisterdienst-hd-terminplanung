@@ -517,6 +517,14 @@ Der Service Worker hält die App-Hülle und die zuletzt geladenen Termine vor.
 Im Funkloch sieht der Mitarbeiter also weiterhin seine Einsätze. Anmeldung und
 Änderungen brauchen eine Verbindung.
 
+Ein neuer Termin wird beim Tippen als Entwurf auf dem Gerät gesichert. Scheitert
+das Speichern mangels Netz und wird die App geschlossen, steht die Eingabe beim
+nächsten Öffnen von „Neuer Termin“ wieder da – mit Hinweis und „Verwerfen“.
+Gesendet wird erst, wenn der Chef selbst auf Speichern tippt. Der Entwurf
+verfällt nach 24 Stunden und wird mit „Abbrechen“, dem Speichern oder dem
+Abmelden gelöscht. Bearbeitungen bestehender Termine werden nicht als Entwurf
+gesichert.
+
 ---
 
 ## Projektstruktur

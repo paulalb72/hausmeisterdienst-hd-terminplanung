@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { api } from './api.js';
+import { verwirfEntwurf } from './entwurf.js';
 
 const AuthContext = createContext(null);
 
@@ -25,7 +26,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    try { await api.logout(); } finally { setUser(null); }
+    // Ein Termin-Entwurf gehoert dem, der ihn getippt hat.
+    try { await api.logout(); } finally { verwirfEntwurf(); setUser(null); }
   }, []);
 
   const value = {
