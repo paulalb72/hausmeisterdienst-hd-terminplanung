@@ -51,7 +51,7 @@ function humanWhen(row) {
 // die Mitarbeiter-App mit einer einzigen Abfrage auskommt.
 const SELECT_FULL = `
   SELECT a.id, a.title, a.starts_at, a.time_mode, a.span_end, a.object,
-         a.notes, a.status,
+         a.notes, a.status, a.created_at,
          a.employee_id, e.name AS employee_name, e.color AS employee_color
     FROM appointments a
     JOIN employees e ON e.id = a.employee_id`;

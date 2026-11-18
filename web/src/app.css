@@ -464,6 +464,9 @@
   padding: 16px;
 }
 .detail__actions .btn { flex: 1 1 140px; }
+/* Unauffaellige Fusszeile: wann der Termin angelegt wurde. */
+.detail__meta { padding: 10px 16px 16px; font-size: 12px; color: var(--hd-ink-soft); }
+.detail__actions + .detail__meta { padding-top: 0; }
 
 /* --- Kalender ------------------------------------------------------------ */
 

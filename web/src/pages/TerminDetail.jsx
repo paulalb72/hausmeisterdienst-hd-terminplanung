@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
-import { formatDateLong } from '../lib/dates.js';
+import { formatDate, formatDateLong, formatTime } from '../lib/dates.js';
 import { ruftAn, zeitHinweis, zeitLabel } from '../lib/termin.js';
 import { Avatar, ErrorBox, Shell, Spinner } from '../components/Shell.jsx';
 import { ConfirmModal } from '../components/Modal.jsx';
@@ -155,6 +155,13 @@ export default function TerminDetail() {
               </button>
             )}
           </div>
+        )}
+
+        {/* Fehlt in Antworten, die noch aus dem Offline-Cache stammen. */}
+        {appt.created_at && (
+          <p className="detail__meta">
+            Angelegt am {formatDate(appt.created_at)} um {formatTime(appt.created_at)} Uhr
+          </p>
         )}
       </div>
 
