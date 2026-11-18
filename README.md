@@ -216,7 +216,10 @@ Postgres nicht im Compose-Stack mitlaufen zu lassen.
    vorher auf den Server zeigen.
 6. **Health Check:** Pfad `/api/health`, Port `4000`. Das Image bringt
    zusaetzlich einen eigenen Docker-Healthcheck mit.
-7. **Deploy** – danach einmal in die Logs sehen: dort steht die PIN fuer die
+7. **Persistent Storage** fuer das Aktionsprotokoll: unter *Storages* ein
+   Volume mit dem Zielpfad `/app/server/logs` anlegen. Ohne das Volume ist
+   das Protokoll nach jedem Redeploy weg (siehe *Wartung → Aktionsprotokoll*).
+8. **Deploy** – danach einmal in die Logs sehen: dort steht die PIN fuer die
    erste Anmeldung.
 
 `TRUST_PROXY=true` ist hier **nicht optional**. Coolify setzt einen Proxy
@@ -543,6 +546,7 @@ server/
       db.js               Einziger Ort mit SQL-Zugriff
       auth.js             PIN-Hashing, Sitzungen, Rollenprüfung
       push.js             Web-Push-Versand
+      aktionslog.js       Aktionsprotokoll (logs/aktionen-JJJJ-MM.log)
       migrate.js          Schema anlegen
       bootstrap.js        Ersten Chef-Zugang anlegen (Zufalls-PIN)
       seed.js             Dasselbe von Hand, für lokale Installationen
@@ -636,6 +640,45 @@ curl https://DOMAIN/api/health     # {"ok":true}
 ```
 
 Abgelaufene Sitzungen räumt die App stündlich selbst auf.
+
+### Aktionsprotokoll
+
+Jede Nutzeraktion landet als eine Zeile in `server/logs/aktionen-JJJJ-MM.log`
+(im Container `/app/server/logs`), eine Datei je Monat:
+
+```
+2026-11-18 14:32:05 | Chef (#1) | Termin angelegt | #42 "Heizung entlüften" · Max · Mo., 23.11. um 10:30 Uhr · "Musterstr. 5"
+2026-11-18 14:35:10 | Chef (#1) | Termin geändert | #42 "Heizung entlüften" · Zeit: Mo., 23.11. um 10:30 Uhr → Mo., 23.11., Vormittags
+2026-11-18 15:02:44 | – | Anmeldung fehlgeschlagen | Konto Max (#3) · falsche PIN (1. Fehlversuch) · IP 203.0.113.7
+```
+
+Protokolliert werden: An- und Abmeldung (auch Fehlversuche, mit IP), Termine
+anlegen, ändern (mit altem und neuem Wert), stornieren und löschen (mit dem
+vollständigen Inhalt – danach existiert er nur noch hier), Mitarbeiter
+anlegen, ändern, entsperren, deaktivieren und löschen, PIN-Änderungen,
+Benachrichtigungen ein/aus/Test sowie das Wartungsskript `reset-pin`.
+Bloßes Ansehen wird nicht protokolliert, PINs stehen nie im Protokoll.
+Freitexte sind auf 120 Zeichen gekürzt. Die Zeit ist deutsche Ortszeit.
+
+Lesen:
+
+```bash
+# Coolify: Anwendung → Terminal, dann
+tail -n 100 logs/aktionen-2026-11.log
+grep "Termin gelöscht" logs/*.log
+grep "Max (#3)" logs/*.log
+
+# Docker Compose
+docker compose exec app tail -n 100 logs/aktionen-2026-11.log
+
+# Ohne Docker
+tail -f /opt/hd-dispo/server/logs/aktionen-2026-11.log
+```
+
+Gelöscht wird nichts automatisch – bei einer Zeile pro Aktion bleiben die
+Dateien klein. Kann der Server nicht schreiben (z. B. fehlende Rechte), steht
+einmalig `[aktionslog] Schreiben fehlgeschlagen` in der Logausgabe; die App
+läuft trotzdem weiter.
 
 ### PIN vergessen
 

@@ -50,8 +50,10 @@ COPY server/src ./src
 # index.js sucht die gebaute Oberflaeche in ../../web/dist, von src aus.
 COPY --from=web   /build/web/dist /app/web/dist
 
-# Nicht als root laufen. Der Prozess schreibt nichts auf die Platte,
-# Lesezugriff auf die kopierten Dateien genuegt.
+# Nicht als root laufen. Lesezugriff auf die kopierten Dateien genuegt –
+# geschrieben wird nur das Aktionsprotokoll. Den Ordner als Volume
+# einhaengen, sonst ist das Protokoll nach jedem Redeploy weg.
+RUN mkdir -p /app/server/logs && chown node:node /app/server/logs
 USER node
 
 EXPOSE 4000

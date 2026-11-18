@@ -7,6 +7,7 @@ import {
   createSession, destroySession, requireAuth, verifyPin,
 } from '../lib/auth.js';
 import { getPublicKey } from '../lib/push.js';
+import { protokolliere } from '../lib/aktionslog.js';
 
 export const authRouter = Router();
 
@@ -53,9 +54,17 @@ authRouter.post('/login', loginLimiter, async (req, res, next) => {
     // Immer dieselbe Meldung, damit man nicht durchprobieren kann,
     // welche Konten es gibt.
     const wrong = { error: 'Name oder PIN stimmt nicht.' };
-    if (!emp) return res.status(401).json(wrong);
+    // Bei Fehlschlägen ist niemand angemeldet – das Konto steht im Text.
+    const fehlschlag = (grund) => protokolliere(null, 'Anmeldung fehlgeschlagen',
+      `Konto ${emp ? `${emp.name} (#${emp.id})` : `#${employeeId}`} · ${grund} · IP ${req.ip}`);
+
+    if (!emp) {
+      fehlschlag('unbekannt oder deaktiviert');
+      return res.status(401).json(wrong);
+    }
 
     if (emp.locked_until && new Date(emp.locked_until) > new Date()) {
+      fehlschlag('Konto gesperrt');
       const mins = Math.ceil((new Date(emp.locked_until) - Date.now()) / 60000);
       return res.status(429).json({
         error: `Konto ist wegen Fehlversuchen für ${mins} Minute(n) gesperrt.`,
@@ -73,6 +82,9 @@ authRouter.post('/login', loginLimiter, async (req, res, next) => {
           WHERE id = $1`,
         [emp.id, lock ? 0 : failed, lock, String(LOCKOUT_MINUTES)],
       );
+      fehlschlag(lock
+        ? `falsche PIN, Konto für ${LOCKOUT_MINUTES} Minuten gesperrt`
+        : `falsche PIN (${failed}. Fehlversuch)`);
       if (lock) {
         return res.status(429).json({
           error: `Konto für ${LOCKOUT_MINUTES} Minuten gesperrt. Der Chef kann es sofort entsperren.`,
@@ -86,6 +98,7 @@ authRouter.post('/login', loginLimiter, async (req, res, next) => {
       [emp.id],
     );
     await createSession(res, emp.id);
+    protokolliere(emp, 'Anmeldung', `IP ${req.ip}`);
     res.json({ user: { id: emp.id, name: emp.name, role: emp.role, color: emp.color } });
   } catch (err) { next(err); }
 });
@@ -93,6 +106,7 @@ authRouter.post('/login', loginLimiter, async (req, res, next) => {
 authRouter.post('/logout', async (req, res, next) => {
   try {
     await destroySession(req, res);
+    if (req.user) protokolliere(req.user, 'Abmeldung');
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -118,11 +132,13 @@ authRouter.post('/pin', requireAuth, async (req, res, next) => {
     const { currentPin, newPin } = parsed.data;
     const emp = await one('SELECT pin_hash FROM employees WHERE id = $1', [req.user.id]);
     if (!(await verifyPin(currentPin, emp.pin_hash))) {
+      protokolliere(req.user, 'PIN-Änderung abgelehnt', 'aktuelle PIN falsch');
       return res.status(401).json({ error: 'Die aktuelle PIN stimmt nicht.' });
     }
     const { hashPin } = await import('../lib/auth.js');
     await query('UPDATE employees SET pin_hash = $2, updated_at = now() WHERE id = $1',
       [req.user.id, await hashPin(newPin)]);
+    protokolliere(req.user, 'PIN geändert');
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

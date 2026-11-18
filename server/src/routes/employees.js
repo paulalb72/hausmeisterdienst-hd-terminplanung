@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { many, one, query } from '../lib/db.js';
 import { hashPin, requireAuth, requireChef } from '../lib/auth.js';
+import { protokolliere } from '../lib/aktionslog.js';
 
 export const employeesRouter = Router();
 
@@ -43,6 +44,8 @@ employeesRouter.post('/', requireChef, async (req, res, next) => {
        RETURNING id, name, role, color, phone, active`,
       [d.name, d.role, d.color, d.phone, d.active, await hashPin(d.pin)],
     );
+    protokolliere(req.user, 'Mitarbeiter angelegt',
+      `${row.name} (#${row.id}) · Rolle ${row.role}${row.active ? '' : ' · inaktiv'}`);
     res.status(201).json(row);
   } catch (err) {
     if (err.code === '23505') {
@@ -61,14 +64,18 @@ employeesRouter.put('/:id', requireChef, async (req, res, next) => {
     }
     const d = parsed.data;
 
+    const before = await one(
+      'SELECT id, name, role, color, phone, active FROM employees WHERE id = $1', [id],
+    );
+    if (!before) return res.status(404).json({ error: 'Mitarbeiter nicht gefunden.' });
+
     // Der letzte aktive Chef darf sich nicht selbst aussperren.
     if (d.role === 'mitarbeiter' || d.active === false) {
       const { count } = await one(
         `SELECT count(*)::int AS count FROM employees
           WHERE role = 'chef' AND active AND id <> $1`, [id],
       );
-      const target = await one('SELECT role, active FROM employees WHERE id = $1', [id]);
-      if (target?.role === 'chef' && target.active && count === 0) {
+      if (before.role === 'chef' && before.active && count === 0) {
         return res.status(409).json({
           error: 'Das ist der letzte aktive Chef – Rolle und Status können nicht geändert werden.',
         });
@@ -93,6 +100,15 @@ employeesRouter.put('/:id', requireChef, async (req, res, next) => {
        d.active ?? null, d.pin ? await hashPin(d.pin) : null],
     );
     if (!row) return res.status(404).json({ error: 'Mitarbeiter nicht gefunden.' });
+
+    const teile = [];
+    for (const [feld, name] of [['name', 'Name'], ['role', 'Rolle'], ['color', 'Farbe'], ['phone', 'Telefon']]) {
+      if (before[feld] !== row[feld]) teile.push(`${name}: ${before[feld] || '–'} → ${row[feld] || '–'}`);
+    }
+    if (before.active !== row.active) teile.push(row.active ? 'aktiviert' : 'deaktiviert');
+    if (d.pin) teile.push('PIN neu gesetzt');
+    protokolliere(req.user, 'Mitarbeiter geändert',
+      `${row.name} (#${row.id}) · ${teile.join(' · ') || 'keine inhaltliche Änderung'}`);
     res.json(row);
   } catch (err) {
     if (err.code === '23505') {
@@ -105,10 +121,12 @@ employeesRouter.put('/:id', requireChef, async (req, res, next) => {
 /** Kontosperre nach Fehlversuchen sofort aufheben. */
 employeesRouter.post('/:id/unlock', requireChef, async (req, res, next) => {
   try {
-    await query(
-      'UPDATE employees SET failed_logins = 0, locked_until = NULL WHERE id = $1',
+    const emp = await one(
+      `UPDATE employees SET failed_logins = 0, locked_until = NULL WHERE id = $1
+       RETURNING id, name`,
       [Number(req.params.id)],
     );
+    if (emp) protokolliere(req.user, 'Sperre aufgehoben', `${emp.name} (#${emp.id})`);
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -123,14 +141,20 @@ employeesRouter.delete('/:id', requireChef, async (req, res, next) => {
     if (id === req.user.id) {
       return res.status(409).json({ error: 'Das eigene Konto kann nicht gelöscht werden.' });
     }
+    const emp = await one('SELECT id, name FROM employees WHERE id = $1', [id]);
     const { count } = await one(
       'SELECT count(*)::int AS count FROM appointments WHERE employee_id = $1', [id],
     );
     if (count > 0) {
       await query('UPDATE employees SET active = FALSE, updated_at = now() WHERE id = $1', [id]);
+      if (emp) {
+        protokolliere(req.user, 'Mitarbeiter deaktiviert',
+          `${emp.name} (#${emp.id}) · statt Löschung, ${count} Termin(e) vorhanden`);
+      }
       return res.json({ ok: true, deactivated: true, appointments: count });
     }
     await query('DELETE FROM employees WHERE id = $1', [id]);
+    if (emp) protokolliere(req.user, 'Mitarbeiter gelöscht', `${emp.name} (#${emp.id})`);
     res.json({ ok: true, deactivated: false });
   } catch (err) { next(err); }
 });

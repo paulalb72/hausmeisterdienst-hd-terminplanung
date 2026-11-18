@@ -34,6 +34,9 @@ services:
       # Proxy mit TLS. Ohne HTTPS gibt es keinen Service Worker und keine
       # Anmeldung, weil das Sitzungs-Cookie "Secure" traegt.
       - "127.0.0.1:${APP_PORT:-4000}:4000"
+    volumes:
+      # Aktionsprotokoll – ueberlebt so jeden Neubau des Containers.
+      - hd_logs:/app/server/logs
 
   db:
     image: postgres:16-alpine
@@ -53,3 +56,4 @@ services:
 
 volumes:
   hd_pgdata:
+  hd_logs:

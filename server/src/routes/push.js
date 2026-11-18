@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { query } from '../lib/db.js';
 import { requireAuth } from '../lib/auth.js';
 import { getPublicKey, notifyEmployee, pushEnabled } from '../lib/push.js';
+import { protokolliere } from '../lib/aktionslog.js';
 
 export const pushRouter = Router();
 
@@ -39,6 +40,8 @@ pushRouter.post('/subscribe', requireAuth, async (req, res, next) => {
              auth        = EXCLUDED.auth`,
       [req.user.id, endpoint, keys.p256dh, keys.auth],
     );
+    // Der Push-Dienst verrät das Gerät: Apple = iPhone, Google = Android/Chrome.
+    protokolliere(req.user, 'Benachrichtigungen eingeschaltet', `über ${new URL(endpoint).host}`);
     res.status(201).json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -52,6 +55,7 @@ pushRouter.post('/unsubscribe', requireAuth, async (req, res, next) => {
         [endpoint, req.user.id],
       );
     }
+    protokolliere(req.user, 'Benachrichtigungen ausgeschaltet');
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -67,6 +71,7 @@ pushRouter.post('/test', requireAuth, async (req, res, next) => {
       body: 'Hausmeisterdienst HD meldet sich ab jetzt bei neuen Terminen.',
       url: '/',
     });
+    protokolliere(req.user, 'Testnachricht gesendet');
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

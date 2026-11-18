@@ -10,6 +10,7 @@ import 'dotenv/config';
 import crypto from 'node:crypto';
 import { hashPin } from './auth.js';
 import { many, one, pool, query } from './db.js';
+import { protokolliere } from './aktionslog.js';
 
 const [name, pinArg] = process.argv.slice(2);
 
@@ -73,4 +74,6 @@ if (!pinArg) console.log('(zufaellig erzeugt – jetzt notieren)');
 if (rowCount) console.log(`${rowCount} offene Sitzung(en) beendet.`);
 console.log('Eine eventuelle Kontosperre wurde aufgehoben.\n');
 
+await protokolliere(null, 'PIN zurückgesetzt (Wartungsskript)',
+  `${treffer.name} · ${rowCount} Sitzung(en) beendet`);
 await pool.end();

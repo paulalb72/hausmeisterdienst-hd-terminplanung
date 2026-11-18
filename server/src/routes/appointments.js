@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { many, one } from '../lib/db.js';
 import { requireAuth, requireChef } from '../lib/auth.js';
 import { notifyEmployee, pushEnabled } from '../lib/push.js';
+import { protokolliere, zitat } from '../lib/aktionslog.js';
 
 export const appointmentsRouter = Router();
 
@@ -171,6 +172,7 @@ appointmentsRouter.post('/', requireChef, async (req, res, next) => {
        normalizeSpan(d.timeMode, d.spanEnd), d.notes, req.user.id],
     );
     const row = await one(`${SELECT_FULL} WHERE a.id = $1`, [created.id]);
+    protokolliere(req.user, 'Termin angelegt', beschreibe(row));
 
     notifyEmployee(row.employee_id, {
       title: 'Neuer Termin',
@@ -247,6 +249,8 @@ appointmentsRouter.put('/:id', requireChef, async (req, res, next) => {
        d.startsAt ?? null, mode, spanEnd, d.notes ?? null, d.status ?? null],
     );
     const after = await one(`${SELECT_FULL} WHERE a.id = $1`, [row.id]);
+    protokolliere(req.user, 'Termin geändert',
+      `#${after.id} ${zitat(after.title)} · ${aenderungen(before, after)}`);
 
     await notifyOnChange(before, after);
     res.json(after);
@@ -270,6 +274,7 @@ appointmentsRouter.post('/:id/cancel', requireChef, async (req, res, next) => {
         WHERE id = $1 RETURNING id`, [id],
     );
     const after = await one(`${SELECT_FULL} WHERE a.id = $1`, [id]);
+    protokolliere(req.user, 'Termin storniert', beschreibe(before));
     await notifyOnChange(before, after);
     res.json(after);
   } catch (err) { next(err); }
@@ -278,12 +283,18 @@ appointmentsRouter.post('/:id/cancel', requireChef, async (req, res, next) => {
 /** Endgültig entfernen – für versehentlich angelegte Termine. */
 appointmentsRouter.delete('/:id', requireChef, async (req, res, next) => {
   try {
+    // Der Mitarbeitername kommt mit, weil der Termin danach nur noch im
+    // Aktionsprotokoll existiert.
     const row = await one(
-      `DELETE FROM appointments WHERE id = $1
-       RETURNING id, employee_id, title, starts_at, time_mode, span_end`,
+      `DELETE FROM appointments a USING employees e
+        WHERE a.id = $1 AND e.id = a.employee_id
+       RETURNING a.id, a.employee_id, a.title, a.starts_at, a.time_mode, a.span_end,
+                 a.object, a.notes, e.name AS employee_name`,
       [Number(req.params.id)],
     );
     if (!row) return res.status(404).json({ error: 'Termin nicht gefunden.' });
+    protokolliere(req.user, 'Termin gelöscht',
+      `${beschreibe(row)}${row.notes ? ` · Arbeitsauftrag ${zitat(row.notes)}` : ''}`);
     notifyEmployee(row.employee_id, {
       title: 'Termin entfällt',
       body: `${row.title}\n${humanWhen(row)}`,
@@ -321,11 +332,7 @@ async function notifyOnChange(before, after) {
     });
   }
 
-  const zeitGeaendert = before.starts_at !== after.starts_at
-    || before.time_mode !== after.time_mode
-    || before.span_end !== after.span_end;
-
-  if (zeitGeaendert) {
+  if (zeitGeaendert(before, after)) {
     return notifyEmployee(after.employee_id, {
       title: 'Termin verschoben',
       body: `${after.title}\nNeu: ${humanWhen(after)}`,
@@ -341,6 +348,42 @@ async function notifyOnChange(before, after) {
       url: `/termin/${after.id}`,
     });
   }
+}
+
+function zeitGeaendert(before, after) {
+  return before.starts_at !== after.starts_at
+    || before.time_mode !== after.time_mode
+    || before.span_end !== after.span_end;
+}
+
+/** '#42 "Heizung entlüften" · Max · Mo., 22.09. um 10:30 Uhr · "Musterstr. 5"' */
+function beschreibe(row) {
+  return [
+    `#${row.id} ${zitat(row.title)}`,
+    row.employee_name,
+    humanWhen(row),
+    row.object && zitat(row.object),
+  ].filter(Boolean).join(' · ');
+}
+
+/** Was sich zwischen zwei Ständen eines Termins geändert hat. */
+function aenderungen(before, after) {
+  const teile = [];
+  if (before.employee_id !== after.employee_id) {
+    teile.push(`Mitarbeiter: ${before.employee_name} → ${after.employee_name}`);
+  }
+  if (zeitGeaendert(before, after)) {
+    teile.push(`Zeit: ${humanWhen(before)} → ${humanWhen(after)}`);
+  }
+  for (const [feld, name] of [['title', 'Bezeichnung'], ['object', 'Objekt'], ['notes', 'Arbeitsauftrag']]) {
+    if (before[feld] !== after[feld]) {
+      teile.push(`${name}: ${zitat(before[feld])} → ${zitat(after[feld])}`);
+    }
+  }
+  if (before.status !== after.status) {
+    teile.push(`Status: ${before.status} → ${after.status}`);
+  }
+  return teile.join(' · ') || 'keine inhaltliche Änderung';
 }
 
 const REMINDER_LEAD_MIN = 60;
